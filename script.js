@@ -1,47 +1,24 @@
-// Camera Functionality
-const cameraView = document.getElementById('camera-view');
-const photoResult = document.getElementById('photo-result');
-const startCamera = document.getElementById('start-camera');
-const takePhoto = document.getElementById('take-photo');
-let stream = null;
-
-startCamera.addEventListener('click', async () => {
-    try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: 'environment' } 
-        });
-        cameraView.srcObject = stream;
-        takePhoto.disabled = false;
-        startCamera.textContent = 'Камера включена';
-        startCamera.disabled = true;
-    } catch (err) {
-        alert("Ошибка доступа к камере: " + err.message);
-    }
-});
-
-takePhoto.addEventListener('click', () => {
-    const context = photoResult.getContext('2d');
-    photoResult.width = cameraView.videoWidth;
-    photoResult.height = cameraView.videoHeight;
-    context.drawImage(cameraView, 0, 0, photoResult.width, photoResult.height);
-    
-    photoResult.style.display = 'block';
-    cameraView.style.display = 'none';
-    takePhoto.disabled = true;
-});
-
-// Registration Form
+// Registration Form with Enhanced Error Handling
 document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const userData = {
-        name: document.getElementById('reg-name').value,
-        email: document.getElementById('reg-email').value,
-        password: document.getElementById('reg-password').value,
-        role: document.getElementById('reg-role').value
-    };
+    const submitBtn = e.target.querySelector('button[type="submit"]');
     
     try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Регистрируем...';
+
+        const userData = {
+            name: document.getElementById('reg-name').value.trim(),
+            email: document.getElementById('reg-email').value.trim(),
+            password: document.getElementById('reg-password').value,
+            role: document.getElementById('reg-role').value
+        };
+
+        // Basic validation
+        if (!userData.email.includes('@')) {
+            throw new Error('Некорректный email');
+        }
+
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
@@ -51,35 +28,45 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             body: JSON.stringify(userData)
         });
 
+        const result = await response.json();
+        
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Registration failed');
+            throw new Error(result.error || result.message || 'Ошибка сервера');
         }
 
-        const data = await response.json();
-        alert('Регистрация успешна!');
-        console.log('User registered:', data);
-        
+        alert(`Регистрация успешна! Добро пожаловать, ${result.user.name}`);
+        console.log('Registration success:', result);
+
     } catch (error) {
         console.error('Registration error:', error);
         alert(`Ошибка: ${error.message}`);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Зарегистрироваться';
     }
 });
 
-// BMI Calculator
+// BMI Calculator (Frontend-only)
 document.getElementById('calculate-bmi').addEventListener('click', () => {
     try {
         const weight = parseFloat(document.getElementById('bmi-weight').value);
         const height = parseFloat(document.getElementById('bmi-height').value) / 100;
         
-        if (isNaN(weight)) throw new Error("Введите корректный вес");
-        if (isNaN(height) || height <= 0) throw new Error("Введите корректный рост");
+        if (isNaN(weight) throw new Error('Введите корректный вес');
+        if (isNaN(height) || height <= 0) throw new Error('Введите корректный рост');
 
         const bmi = (weight / (height * height)).toFixed(1);
         document.getElementById('bmi-value').textContent = `ИМТ: ${bmi}`;
         
-        // Add BMI category logic here
-        console.log("BMI calculated:", bmi);
+        // BMI Categories
+        let category = '';
+        if (bmi < 18.5) category = 'Недостаточный вес';
+        else if (bmi < 25) category = 'Нормальный вес';
+        else if (bmi < 30) category = 'Избыточный вес';
+        else category = 'Ожирение';
+        
+        document.getElementById('bmi-category').textContent = `Категория: ${category}`;
+
     } catch (error) {
         alert(error.message);
     }
@@ -89,10 +76,14 @@ document.getElementById('calculate-bmi').addEventListener('click', () => {
 document.getElementById('save-pressure').addEventListener('click', async () => {
     try {
         const pressureData = {
-            systolic: document.getElementById('systolic').value,
-            diastolic: document.getElementById('diastolic').value,
-            pulse: document.getElementById('pulse').value
+            systolic: parseInt(document.getElementById('systolic').value),
+            diastolic: parseInt(document.getElementById('diastolic').value),
+            pulse: parseInt(document.getElementById('pulse').value) || null
         };
+
+        if (isNaN(pressureData.systolic) || isNaN(pressureData.diastolic)) {
+            throw new Error('Введите корректные значения давления');
+        }
 
         const response = await fetch('/api/health/pressure', {
             method: 'POST',
@@ -103,20 +94,25 @@ document.getElementById('save-pressure').addEventListener('click', async () => {
             body: JSON.stringify(pressureData)
         });
 
-        if (!response.ok) throw new Error("Failed to save data");
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Ошибка сохранения');
+        }
+
+        alert('Данные давления сохранены!');
         
-        alert("Данные сохранены!");
-        console.log('Pressure saved:', await response.json());
     } catch (error) {
         alert(`Ошибка: ${error.message}`);
+        console.error('Pressure save error:', error);
     }
 });
 
 // Chatbot Functionality
 async function sendMessage() {
+    const userInput = document.getElementById('user-input');
     const message = userInput.value.trim();
     if (!message) return;
-    
+
     addMessage(message, 'user');
     userInput.value = '';
     
@@ -130,14 +126,22 @@ async function sendMessage() {
             body: JSON.stringify({ message })
         });
 
-        if (!response.ok) {
-            throw new Error("Chat service unavailable");
-        }
-
         const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Ошибка чата');
+
         addMessage(data.reply, 'bot');
     } catch (error) {
-        addMessage("Извините, произошла ошибка соединения", 'bot');
+        addMessage("⚠️ Ошибка соединения с сервером", 'bot');
         console.error('Chat error:', error);
     }
+}
+
+// Helper function for chat messages
+function addMessage(text, sender) {
+    const chatContainer = document.getElementById('chat-messages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${sender}-message`;
+    messageDiv.textContent = text;
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
 }

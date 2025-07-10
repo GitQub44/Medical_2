@@ -1,21 +1,24 @@
-// In-memory "database" (replace with real DB in production)
+// Temporary storage (replace with database in production)
 const users = [];
 
 module.exports = async (req, res) => {
-    // CORS Headers
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json');
 
-    // Handle OPTIONS for CORS preflight
+    // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         return res.status(200).end();
     }
 
-    // Only allow POST
+    // Only allow POST requests
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return res.status(405).json({ 
+            error: 'Метод не разрешен',
+            allowedMethods: ['POST']
+        });
     }
 
     try {
@@ -23,31 +26,49 @@ module.exports = async (req, res) => {
 
         // Validation
         if (!name || !email || !password || !role) {
-            return res.status(400).json({ 
-                error: "Все поля обязательны для заполнения",
-                missing: {
-                    name: !name,
-                    email: !email,
-                    password: !password,
-                    role: !role
+            return res.status(400).json({
+                error: 'Все поля обязательны',
+                details: {
+                    missing_fields: {
+                        name: !name,
+                        email: !email,
+                        password: !password,
+                        role: !role
+                    }
                 }
             });
         }
 
-        // Check if user exists
-        if (users.some(u => u.email === email)) {
-            return res.status(409).json({ 
-                error: "Пользователь с этим email уже существует" 
+        // Email validation
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({
+                error: 'Некорректный email'
             });
         }
 
-        // In production: Hash password before saving!
-        const newUser = { id: Date.now(), name, email, password, role };
+        // Check if user exists
+        if (users.some(user => user.email === email)) {
+            return res.status(409).json({
+                error: 'Пользователь с этим email уже зарегистрирован'
+            });
+        }
+
+        // Create user (in production: hash password!)
+        const newUser = {
+            id: Date.now(),
+            name,
+            email,
+            password, // In production: store hashed password only
+            role,
+            createdAt: new Date().toISOString()
+        };
+
         users.push(newUser);
 
+        // Return success (excluding password in response)
         return res.status(201).json({
             success: true,
-            message: "Регистрация успешна!",
+            message: 'Регистрация успешна',
             user: {
                 id: newUser.id,
                 name: newUser.name,
@@ -58,9 +79,9 @@ module.exports = async (req, res) => {
 
     } catch (error) {
         console.error('Registration error:', error);
-        return res.status(500).json({ 
-            error: "Внутренняя ошибка сервера",
-            details: error.message 
+        return res.status(500).json({
+            error: 'Внутренняя ошибка сервера',
+            details: error.message
         });
     }
 };
