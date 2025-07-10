@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUBI - Медицинский Мониторинг</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <i class="fas fa-hospital-alt"></i>
+            <span class="logo-text">QUBI</span>
+        </div>
+        <p>Профессиональная система мониторинга здоровья</p>
+    </header>
+
+    <main class="container">
+        <!-- Registration Section -->
+        <section id="auth-section" class="card">
+            <h2><i class="fas fa-user-plus"></i> Регистрация</h2>
+            <form id="register-form">
+                <input type="text" id="reg-name" placeholder="ФИО" required>
+                <input type="email" id="reg-email" placeholder="Email" required>
+                <input type="password" id="reg-password" placeholder="Пароль" required>
+                <select id="reg-role">
+                    <option value="patient">Пациент</option>
+                    <option value="doctor">Врач</option>
+                </select>
+                <button type="submit">Зарегистрироваться</button>
+            </form>
+        </section>
+
+        <!-- Medical Camera -->
+        <section id="camera-section" class="card">
+            <h2><i class="fas fa-camera"></i> Медицинская камера</h2>
+            <div class="camera-container">
+                <video id="camera-view" autoplay playsinline></video>
+                <canvas id="photo-result"></canvas>
+            </div>
+            <button id="start-camera"><i class="fas fa-video"></i> Включить камеру</button>
+            <button id="take-photo" disabled><i class="fas fa-camera"></i> Сделать фото</button>
+        </section>
+
+        <!-- Add these sections after camera section -->
+
+<!-- BMI Tracker -->
+<section id="bmi-section" class="card">
+  <h2><i class="fas fa-weight"></i> Калькулятор ИМТ</h2>
+  <div class="input-group">
+    <input type="number" id="bmi-weight" placeholder="Вес (кг)">
+    <input type="number" id="bmi-height" placeholder="Рост (см)">
+  </div>
+  <button id="calculate-bmi">Рассчитать</button>
+  <div id="bmi-result">
+    <div class="bmi-visual">
+      <div class="bmi-scale">
+        <div class="bmi-indicator" id="bmi-indicator"></div>
+      </div>
+      <div class="bmi-labels">
+        <span>Недостаток</span>
+        <span>Норма</span>
+        <span>Избыток</span>
+        <span>Ожирение</span>
+      </div>
+    </div>
+    <p id="bmi-value">ИМТ: --</p>
+    <p id="bmi-category">Категория: --</p>
+  </div>
+</section>
+
+<!-- Blood Pressure Tracker -->
+<section id="pressure-section" class="card">
+  <h2><i class="fas fa-heartbeat"></i> Давление</h2>
+  <div class="input-group">
+    <input type="number" id="systolic" placeholder="Верхнее (систолическое)">
+    <input type="number" id="diastolic" placeholder="Нижнее (диастолическое)">
+    <input type="number" id="pulse" placeholder="Пульс">
+  </div>
+  <button id="save-pressure">Сохранить</button>
+  <canvas id="pressure-chart"></canvas>
+</section>
+
+<!-- Online Consultation -->
+<section id="consult-section" class="card">
+  <h2><i class="fas fa-video"></i> Онлайн-консультация</h2>
+  <div id="consult-status">Статус: Не подключено</div>
+  <button id="request-consult">Запросить консультацию</button>
+  <div id="video-consult" class="hidden">
+    <video id="local-video" autoplay muted></video>
+    <video id="remote-video" autoplay></video>
+    <button id="end-consult">Завершить</button>
+  </div>
+</section>
+
+        <!-- AI Chatbot -->
+        <section id="chat-section" class="card">
+            <h2><i class="fas fa-robot"></i> Медицинский помощник</h2>
+            <div class="chat-container" id="chat-messages">
+                <div class="chat-message bot-message">
+                    Здравствуйте! Я QUBI, ваш медицинский помощник. Чем могу помочь?
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="user-input" placeholder="Ваш вопрос...">
+                <button id="send-message"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2023 QUBI Health Technologies. Все права защищены.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
