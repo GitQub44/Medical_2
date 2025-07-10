@@ -1,21 +1,42 @@
-// Handles POST /api/auth/register
 module.exports = async (req, res) => {
-  if (req.method === 'POST') {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    return res.status(200).end();
+  }
+
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  // Only allow POST
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
     const { name, email, password, role } = req.body;
 
-    // Validate input (add your logic)
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password required" });
+    // Validation
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ error: "All fields are required" });
     }
 
-    // In a real app, save to a database (e.g., Firebase, MongoDB)
-    const user = { name, email, password, role };
+    // In production: Add database storage here
+    console.log("New user:", { name, email, role }); // Debug log
 
-    return res.status(200).json({ 
-      message: "Registration successful!", 
-      user 
+    return res.json({ 
+      success: true,
+      message: "Registration successful!",
+      user: { name, email, role } 
     });
-  } else {
-    res.status(405).json({ error: "Method not allowed" });
+    
+  } catch (error) {
+    console.error("Registration error:", error);
+    return res.status(500).json({ 
+      error: "Internal server error",
+      details: error.message 
+    });
   }
 };

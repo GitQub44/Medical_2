@@ -1,3 +1,13 @@
+  // Add to the very top of each API file
+if (req.method === 'OPTIONS') {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  return res.status(200).end();
+}
+
+// Add to all responses
+res.setHeader('Access-Control-Allow-Origin', '*');
   // Handles POST /api/health/pressure
 const pressureData = []; // Temporary storage (replace with a DB)
 

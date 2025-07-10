@@ -33,6 +33,25 @@ takePhoto.addEventListener('click', () => {
     // const imageData = photoResult.toDataURL('image/jpeg');
     // await saveMedicalPhoto(imageData);
 });
+document.getElementById('calculate-bmi').addEventListener('click', () => {
+  try {
+    const weight = parseFloat(document.getElementById('bmi-weight').value);
+    const height = parseFloat(document.getElementById('bmi-height').value) / 100;
+    
+    if (isNaN(weight) || isNaN(height)) {
+      throw new Error("Please enter valid weight and height");
+    }
+    
+    const bmi = (weight / (height * height)).toFixed(1);
+    document.getElementById('bmi-value').textContent = `BMI: ${bmi}`;
+    
+    // Add category logic here
+    console.log("BMI calculated:", bmi); // Debug log
+  } catch (error) {
+    alert(error.message);
+    console.error("BMI Error:", error);
+  }
+});
 
 // Registration Form
 document.getElementById('register-form').addEventListener('submit', async (e) => {
@@ -45,26 +64,26 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         role: document.getElementById('reg-role').value
     };
     
-    try {
-        const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userData)
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            alert('Регистрация успешна!');
-            // Redirect or show authenticated UI
-        } else {
-            alert(data.message || 'Ошибка регистрации');
-        }
-    } catch (error) {
-        alert('Ошибка соединения с сервером');
-    }
+  // In registration handler
+try {
+  const response = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userData)
+  });
+  
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.error || 'Registration failed');
+  }
+  
+  alert('Registration successful!');
+  console.log('Server response:', data); // Debug log
+} catch (error) {
+  console.error('Registration error:', error);
+  alert(`Error: ${error.message}`);
+}
 });
 
 // Chatbot Functionality
@@ -98,6 +117,8 @@ async function sendMessage() {
         addMessage("Извините, произошла ошибка соединения", 'bot');
     }
 }
+
+
 
 function addMessage(text, sender) {
     const messageDiv = document.createElement('div');
