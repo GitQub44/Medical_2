@@ -1,25 +1,52 @@
-// Add to the very top of each API file
-if (req.method === 'OPTIONS') {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  return res.status(200).end();
-}
-
-// Add to all responses
-res.setHeader('Access-Control-Allow-Origin', '*');
-// Handles POST /api/chat
 module.exports = async (req, res) => {
-  if (req.method === 'POST') {
-    const { message } = req.body;
-    let reply = "I didn't understand that.";
+    // CORS Headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');
 
-    // Simple AI responses (replace with a real NLP service if needed)
-    if (message.includes("pressure")) reply = "Normal blood pressure is 120/80 mmHg.";
-    if (message.includes("BMI")) reply = "BMI is calculated as weight (kg) / height² (m).";
+    // Handle OPTIONS for CORS preflight
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        return res.status(200).end();
+    }
 
-    return res.status(200).json({ reply });
-  } else {
-    res.status(405).json({ error: "Method not allowed" });
-  }
+    // Only allow POST
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    try {
+        const { message } = req.body;
+
+        if (!message || typeof message !== 'string') {
+            return res.status(400).json({ error: "Неверный запрос" });
+        }
+
+        // Simple medical responses
+        const responses = {
+            "давление": "Нормальное кровяное давление: 120/80 мм рт.ст.",
+            "bmi": "ИМТ рассчитывается как вес (кг) / (рост (м))².",
+            "пульс": "Нормальный пульс в покое: 60-100 ударов в минуту.",
+            "default": "Я медицинский помощник. Спросите о давлении, ИМТ или пульсе."
+        };
+
+        const lowerMsg = message.toLowerCase();
+        let reply = responses.default;
+
+        if (lowerMsg.includes("давлен")) reply = responses["давление"];
+        if (lowerMsg.includes("bmi") || lowerMsg.includes("имт")) reply = responses["bmi"];
+        if (lowerMsg.includes("пульс")) reply = responses["пульс"];
+
+        return res.status(200).json({ 
+            success: true,
+            reply 
+        });
+
+    } catch (error) {
+        console.error('Chat error:', error);
+        return res.status(500).json({ 
+            error: "Ошибка обработки запроса",
+            details: error.message 
+        });
+    }
 };

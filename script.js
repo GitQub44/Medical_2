@@ -28,29 +28,6 @@ takePhoto.addEventListener('click', () => {
     photoResult.style.display = 'block';
     cameraView.style.display = 'none';
     takePhoto.disabled = true;
-    
-    // Here you would typically send the photo to your backend
-    // const imageData = photoResult.toDataURL('image/jpeg');
-    // await saveMedicalPhoto(imageData);
-});
-document.getElementById('calculate-bmi').addEventListener('click', () => {
-  try {
-    const weight = parseFloat(document.getElementById('bmi-weight').value);
-    const height = parseFloat(document.getElementById('bmi-height').value) / 100;
-    
-    if (isNaN(weight) || isNaN(height)) {
-      throw new Error("Please enter valid weight and height");
-    }
-    
-    const bmi = (weight / (height * height)).toFixed(1);
-    document.getElementById('bmi-value').textContent = `BMI: ${bmi}`;
-    
-    // Add category logic here
-    console.log("BMI calculated:", bmi); // Debug log
-  } catch (error) {
-    alert(error.message);
-    console.error("BMI Error:", error);
-  }
 });
 
 // Registration Form
@@ -64,37 +41,78 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         role: document.getElementById('reg-role').value
     };
     
-  // In registration handler
-try {
-  const response = await fetch('/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData)
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.error || 'Registration failed');
-  }
-  
-  alert('Registration successful!');
-  console.log('Server response:', data); // Debug log
-} catch (error) {
-  console.error('Registration error:', error);
-  alert(`Error: ${error.message}`);
-}
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Registration failed');
+        }
+
+        const data = await response.json();
+        alert('Регистрация успешна!');
+        console.log('User registered:', data);
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        alert(`Ошибка: ${error.message}`);
+    }
+});
+
+// BMI Calculator
+document.getElementById('calculate-bmi').addEventListener('click', () => {
+    try {
+        const weight = parseFloat(document.getElementById('bmi-weight').value);
+        const height = parseFloat(document.getElementById('bmi-height').value) / 100;
+        
+        if (isNaN(weight)) throw new Error("Введите корректный вес");
+        if (isNaN(height) || height <= 0) throw new Error("Введите корректный рост");
+
+        const bmi = (weight / (height * height)).toFixed(1);
+        document.getElementById('bmi-value').textContent = `ИМТ: ${bmi}`;
+        
+        // Add BMI category logic here
+        console.log("BMI calculated:", bmi);
+    } catch (error) {
+        alert(error.message);
+    }
+});
+
+// Blood Pressure Tracker
+document.getElementById('save-pressure').addEventListener('click', async () => {
+    try {
+        const pressureData = {
+            systolic: document.getElementById('systolic').value,
+            diastolic: document.getElementById('diastolic').value,
+            pulse: document.getElementById('pulse').value
+        };
+
+        const response = await fetch('/api/health/pressure', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(pressureData)
+        });
+
+        if (!response.ok) throw new Error("Failed to save data");
+        
+        alert("Данные сохранены!");
+        console.log('Pressure saved:', await response.json());
+    } catch (error) {
+        alert(`Ошибка: ${error.message}`);
+    }
 });
 
 // Chatbot Functionality
-const chatMessages = document.getElementById('chat-messages');
-const userInput = document.getElementById('user-input');
-
-document.getElementById('send-message').addEventListener('click', sendMessage);
-userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-});
-
 async function sendMessage() {
     const message = userInput.value.trim();
     if (!message) return;
@@ -106,24 +124,20 @@ async function sendMessage() {
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             },
             body: JSON.stringify({ message })
         });
-        
+
+        if (!response.ok) {
+            throw new Error("Chat service unavailable");
+        }
+
         const data = await response.json();
         addMessage(data.reply, 'bot');
     } catch (error) {
         addMessage("Извините, произошла ошибка соединения", 'bot');
+        console.error('Chat error:', error);
     }
-}
-
-
-
-function addMessage(text, sender) {
-    const messageDiv = document.createElement('div');
-    messageDiv.classList.add('chat-message', `${sender}-message`);
-    messageDiv.textContent = text;
-    chatMessages.appendChild(messageDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
 }
