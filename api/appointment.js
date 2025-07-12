@@ -1,50 +1,48 @@
-// In-memory storage (replace with DB)
 const appointments = [];
-const doctorSchedules = {
-    // Example structure
-    'dr-smith': {
-        available: ['09:00', '10:00', '14:00'],
-        specialty: 'cardiology'
-    }
-};
 
 module.exports = async (req, res) => {
-    // CORS and method handling as before...
-    
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'application/json');
+
+    if (req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+        return res.status(200).end();
+    }
+
     if (req.method === 'POST') {
-        const { patientId, doctorId, category, symptoms, urgency } = req.body;
-        
-        // Validate
-        if (!doctorSchedules[doctorId]) {
-            return res.status(400).json({ error: 'Доктор не найден' });
+        try {
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                const data = JSON.parse(body);
+                const newAppointment = {
+                    id: Date.now().toString(),
+                    ...data,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+                
+                appointments.push(newAppointment);
+                const queuePosition = appointments.filter(a => 
+                    a.doctorId === data.doctorId && a.status === 'pending').length;
+
+                return res.status(201).json({
+                    success: true,
+                    message: 'Запись создана',
+                    appointmentId: newAppointment.id,
+                    queuePosition
+                });
+            });
+        } catch (error) {
+            return res.status(400).json({
+                success: false,
+                message: 'Неверный формат данных'
+            });
         }
-        
-        // Create appointment
-        const appointment = {
-            id: Date.now(),
-            patientId,
-            doctorId,
-            category,
-            symptoms,
-            urgency,
-            status: 'waiting',
-            createdAt: new Date().toISOString()
-        };
-        
-        appointments.push(appointment);
-        
-        // Find next available slot
-        const schedule = doctorSchedules[doctorId];
-        const nextSlot = schedule.available.shift(); // Remove first available slot
-        
-        return res.json({
-            success: true,
-            appointment,
-            queuePosition: appointments.filter(a => 
-                a.doctorId === doctorId && a.status === 'waiting').length,
-            estimatedTime: nextSlot || 'Сегодня'
+    } else {
+        return res.status(405).json({
+            success: false,
+            message: 'Метод не разрешен'
         });
     }
-    
-    // Other methods...
 };

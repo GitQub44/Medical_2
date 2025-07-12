@@ -1,41 +1,35 @@
-// api/auth.js
-const users = []; // Temporary storage
+const users = [];
 
 module.exports = async (req, res) => {
-    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json');
 
-    // Handle OPTIONS preflight
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
         return res.status(200).end();
     }
 
-    // Only allow POST
     if (req.method !== 'POST') {
         return res.status(405).json({ 
             success: false,
-            message: 'Только POST запросы разрешены' 
+            message: 'Метод не разрешен' 
         });
     }
 
     try {
         let body = '';
         req.on('data', chunk => body += chunk);
-        req.on('end', async () => {
+        req.on('end', () => {
             try {
                 const { name, email, password, role } = JSON.parse(body);
 
-                // Validate input
-                if (!email || !password) {
+                if (!name || !email || !password || !role) {
                     return res.status(400).json({
                         success: false,
-                        message: 'Email и пароль обязательны'
+                        message: 'Все поля обязательны'
                     });
                 }
 
-                // Check if user exists
                 if (users.some(u => u.email === email)) {
                     return res.status(409).json({
                         success: false,
@@ -43,22 +37,26 @@ module.exports = async (req, res) => {
                     });
                 }
 
-                // Create user
                 const newUser = { 
-                    id: Date.now(), 
+                    id: Date.now().toString(),
                     name, 
                     email, 
                     password, 
-                    role 
+                    role,
+                    createdAt: new Date().toISOString()
                 };
                 users.push(newUser);
 
                 return res.status(201).json({
                     success: true,
                     message: 'Регистрация успешна',
-                    user: { id: newUser.id, name, email, role }
+                    user: {
+                        id: newUser.id,
+                        name: newUser.name,
+                        email: newUser.email,
+                        role: newUser.role
+                    }
                 });
-
             } catch (error) {
                 return res.status(400).json({
                     success: false,
@@ -66,7 +64,6 @@ module.exports = async (req, res) => {
                 });
             }
         });
-
     } catch (error) {
         return res.status(500).json({
             success: false,

@@ -39,60 +39,65 @@
                 <video id="camera-view" autoplay playsinline></video>
                 <canvas id="photo-result"></canvas>
             </div>
-            <button id="start-camera"><i class="fas fa-video"></i> Включить камеру</button>
-            <button id="take-photo" disabled><i class="fas fa-camera"></i> Сделать фото</button>
+            <div class="camera-controls">
+                <button id="start-camera"><i class="fas fa-video"></i> Включить камеру</button>
+                <button id="toggle-flash"><i class="far fa-bolt"></i> Вспышка</button>
+                <button id="take-photo" disabled><i class="fas fa-camera"></i> Сделать фото</button>
+            </div>
+            <div id="mode-indicator">Режим: Фото</div>
         </section>
 
-        <!-- Add these sections after camera section -->
+        <!-- BMI Tracker -->
+        <section id="bmi-section" class="card">
+            <h2><i class="fas fa-weight"></i> Калькулятор ИМТ</h2>
+            <div class="input-group">
+                <input type="number" id="bmi-weight" placeholder="Вес (кг)">
+                <input type="number" id="bmi-height" placeholder="Рост (см)">
+            </div>
+            <button id="calculate-bmi">Рассчитать</button>
+            <div id="bmi-result">
+                <div class="bmi-visual">
+                    <div class="bmi-scale">
+                        <div class="bmi-indicator"></div>
+                    </div>
+                    <div class="bmi-labels">
+                        <span>Недостаток</span>
+                        <span>Норма</span>
+                        <span>Избыток</span>
+                        <span>Ожирение</span>
+                    </div>
+                </div>
+                <p id="bmi-value">ИМТ: --</p>
+                <p id="bmi-category">Категория: --</p>
+                <p id="bmi-advice"></p>
+                <button id="bmi-consult-btn" style="display:none;">Проконсультироваться с врачом</button>
+            </div>
+        </section>
 
-<!-- BMI Tracker -->
-<section id="bmi-section" class="card">
-  <h2><i class="fas fa-weight"></i> Калькулятор ИМТ</h2>
-  <div class="input-group">
-    <input type="number" id="bmi-weight" placeholder="Вес (кг)">
-    <input type="number" id="bmi-height" placeholder="Рост (см)">
-  </div>
-  <button id="calculate-bmi">Рассчитать</button>
-  <div id="bmi-result">
-    <div class="bmi-visual">
-      <div class="bmi-scale">
-        <div class="bmi-indicator" id="bmi-indicator"></div>
-      </div>
-      <div class="bmi-labels">
-        <span>Недостаток</span>
-        <span>Норма</span>
-        <span>Избыток</span>
-        <span>Ожирение</span>
-      </div>
-    </div>
-    <p id="bmi-value">ИМТ: --</p>
-    <p id="bmi-category">Категория: --</p>
-  </div>
-</section>
-
-<!-- Blood Pressure Tracker -->
-<section id="pressure-section" class="card">
-  <h2><i class="fas fa-heartbeat"></i> Давление</h2>
-  <div class="input-group">
-    <input type="number" id="systolic" placeholder="Верхнее (систолическое)">
-    <input type="number" id="diastolic" placeholder="Нижнее (диастолическое)">
-    <input type="number" id="pulse" placeholder="Пульс">
-  </div>
-  <button id="save-pressure">Сохранить</button>
-  <canvas id="pressure-chart"></canvas>
-</section>
-
-<!-- Online Consultation -->
-<section id="consult-section" class="card">
-  <h2><i class="fas fa-video"></i> Онлайн-консультация</h2>
-  <div id="consult-status">Статус: Не подключено</div>
-  <button id="request-consult">Запросить консультацию</button>
-  <div id="video-consult" class="hidden">
-    <video id="local-video" autoplay muted></video>
-    <video id="remote-video" autoplay></video>
-    <button id="end-consult">Завершить</button>
-  </div>
-</section>
+        <!-- Doctor Appointment -->
+        <section id="appointment-section" class="card">
+            <h2><i class="fas fa-calendar-check"></i> Запись к врачу</h2>
+            <form id="appointment-form">
+                <select id="health-category" required>
+                    <option value="">Выберите категорию</option>
+                    <option value="cardiology">Кардиология</option>
+                    <option value="ophthalmology">Офтальмология</option>
+                    <option value="traumatology">Травматология</option>
+                    <option value="neurology">Неврология</option>
+                </select>
+                <select id="select-doctor" required disabled>
+                    <option value="">Сначала выберите категорию</option>
+                </select>
+                <textarea id="symptoms" placeholder="Опишите симптомы" required></textarea>
+                <select id="urgency-level" required>
+                    <option value="normal">Обычная</option>
+                    <option value="urgent">Срочная</option>
+                    <option value="emergency">Неотложная</option>
+                </select>
+                <button type="submit">Записаться на прием</button>
+            </form>
+            <div id="appointment-status"></div>
+        </section>
 
         <!-- AI Chatbot -->
         <section id="chat-section" class="card">
