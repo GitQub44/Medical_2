@@ -1,51 +1,85 @@
 // Registration Form with Enhanced Error Handling
+// Registration Form with Proper Error Handling
 document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    
     const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
     
     try {
-        submitBtn.disabled = true;
-        submitBtn.textContent = 'Регистрируем...';
-
         const userData = {
-            name: document.getElementById('reg-name').value.trim(),
-            email: document.getElementById('reg-email').value.trim(),
+            name: document.getElementById('reg-name').value,
+            email: document.getElementById('reg-email').value,
             password: document.getElementById('reg-password').value,
             role: document.getElementById('reg-role').value
         };
 
-        // Basic validation
-        if (!userData.email.includes('@')) {
-            throw new Error('Некорректный email');
-        }
-
         const response = await fetch('/api/auth/register', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData)
         });
 
         const result = await response.json();
         
         if (!response.ok) {
-            throw new Error(result.error || result.message || 'Ошибка сервера');
+            throw new Error(result.message || 'Ошибка регистрации');
         }
 
-        alert(`Регистрация успешна! Добро пожаловать, ${result.user.name}`);
+        alert(result.message);
         console.log('Registration success:', result);
-
+        
     } catch (error) {
+        alert(error.message);
         console.error('Registration error:', error);
-        alert(`Ошибка: ${error.message}`);
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Зарегистрироваться';
     }
 });
 
+// Working BMI Calculator
+document.getElementById('calculate-bmi').addEventListener('click', () => {
+    try {
+        const weight = parseFloat(document.getElementById('bmi-weight').value);
+        const height = parseFloat(document.getElementById('bmi-height').value) / 100;
+        
+        if (isNaN(weight)) throw new Error('Введите корректный вес');
+        if (isNaN(height)) throw new Error('Введите корректный рост');
+
+        const bmi = (weight / (height * height)).toFixed(1);
+        updateBmiDisplay(bmi);
+        
+    } catch (error) {
+        alert(error.message);
+    }
+});
+
+function updateBmiDisplay(bmi) {
+    const resultEl = document.getElementById('bmi-result');
+    resultEl.innerHTML = `
+        <div class="bmi-scale">
+            <div class="bmi-indicator" style="left: ${calculateBmiPosition(bmi)}%"></div>
+        </div>
+        <p>Ваш ИМТ: <strong>${bmi}</strong></p>
+        <p>${getBmiCategory(bmi)}</p>
+    `;
+}
+
+function calculateBmiPosition(bmi) {
+    if (bmi < 16) return 0;
+    if (bmi < 18.5) return 25;
+    if (bmi < 25) return 50;
+    if (bmi < 30) return 75;
+    return 100;
+}
+
+function getBmiCategory(bmi) {
+    if (bmi < 16) return 'Выраженный дефицит массы тела';
+    if (bmi < 18.5) return 'Недостаточная масса тела';
+    if (bmi < 25) return 'Норма';
+    if (bmi < 30) return 'Избыточная масса тела';
+    return 'Ожирение';
+}
 // Enhanced Camera with Flash and Capture Modes
 let flashOn = false;
 let captureMode = 'photo'; // 'photo' or 'analysis'
@@ -142,77 +176,8 @@ function initWebSocket(appointmentId) {
     };
 }
 
-// BMI Calculator (Frontend-only)
-// BMI Calculator with Visual Indicator
-document.getElementById('calculate-bmi').addEventListener('click', () => {
-    try {
-        const weight = parseFloat(document.getElementById('bmi-weight').value);
-        const height = parseFloat(document.getElementById('bmi-height').value) / 100;
-        
-        if (isNaN(weight)) throw new Error('Введите корректный вес');
-        if (isNaN(height) || height <= 0) throw new Error('Введите корректный рост');
+    
 
-        const bmi = (weight / (height * height)).toFixed(1);
-        updateBmiVisualization(bmi);
-        
-    } catch (error) {
-        alert(error.message);
-    }
-});
-
-function updateBmiVisualization(bmi) {
-    const bmiScale = document.getElementById('bmi-scale');
-    const bmiIndicator = document.getElementById('bmi-indicator');
-    const bmiValue = document.getElementById('bmi-value');
-    const bmiAdvice = document.getElementById('bmi-advice');
-    
-    // Clear previous classes
-    bmiIndicator.className = 'bmi-indicator';
-    
-    // Position indicator (0-100% scale)
-    let position = 0;
-    let category = '';
-    let color = '';
-    let advice = '';
-    
-    if (bmi < 16) {
-        position = 0;
-        category = 'Выраженный дефицит';
-        color = 'red';
-        advice = 'Срочно обратитесь к врачу!';
-    } else if (bmi < 18.5) {
-        position = 25;
-        category = 'Недостаточный вес';
-        color = 'orange';
-        advice = 'Рекомендуется консультация диетолога';
-    } else if (bmi < 25) {
-        position = 50;
-        category = 'Норма';
-        color = 'green';
-        advice = 'Ваш вес в норме';
-    } else if (bmi < 30) {
-        position = 75;
-        category = 'Избыточный вес';
-        color = 'orange';
-        advice = 'Рекомендуется увеличить физическую активность';
-    } else {
-        position = 100;
-        category = 'Ожирение';
-        color = 'red';
-        advice = 'Рекомендуется консультация врача';
-    }
-    
-    // Update UI
-    bmiIndicator.style.left = `${position}%`;
-    bmiIndicator.classList.add(color);
-    bmiValue.innerHTML = `ИМТ: <strong>${bmi}</strong>`;
-    document.getElementById('bmi-category').innerHTML = `Категория: <span class="${color}-text">${category}</span>`;
-    bmiAdvice.textContent = advice;
-    
-    // Show consult button if needed
-    const consultBtn = document.getElementById('bmi-consult-btn');
-    consultBtn.style.display = (bmi < 18.5 || bmi >= 25) ? 'block' : 'none';
-}
 // Blood Pressure Tracker
 document.getElementById('save-pressure').addEventListener('click', async () => {
     try {

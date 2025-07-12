@@ -211,10 +211,15 @@ footer {
         grid-column: span 2;
     }
 }
-/* BMI Visual Scale */
+/* Add to style.css */
 .bmi-scale {
     height: 20px;
-    background: linear-gradient(90deg, #3498db, #2ecc71, #f1c40f, #e74c3c);
+    background: linear-gradient(to right, 
+        #3498db,   /* Underweight */
+        #2ecc71,   /* Normal */
+        #f39c12,   /* Overweight */
+        #e74c3c    /* Obese */
+    );
     border-radius: 10px;
     margin: 15px 0;
     position: relative;
@@ -227,16 +232,14 @@ footer {
     background: #333;
     top: -5px;
     transform: translateX(-50%);
-    transition: left 0.5s ease;
 }
 
-.bmi-indicator.red { border: 2px solid #e74c3c; }
-.bmi-indicator.orange { border: 2px solid #f39c12; }
-.bmi-indicator.green { border: 2px solid #2ecc71; }
-
-.red-text { color: #e74c3c; }
-.orange-text { color: #f39c12; }
-.green-text { color: #2ecc71; }
+#bmi-result {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    margin-top: 10px;
+}
 
 /* Camera Enhancements */
 .camera-controls {

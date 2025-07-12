@@ -1,60 +1,55 @@
-// Temporary storage (replace with database)
-const pressureReadings = [];
+// api/health.js
+const pressureData = [];
 
 module.exports = async (req, res) => {
-    // CORS Headers
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json');
 
-    // Handle OPTIONS for CORS preflight
+    // Handle OPTIONS preflight
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         return res.status(200).end();
     }
 
     try {
-        // Handle POST
         if (req.method === 'POST') {
-            const { systolic, diastolic, pulse } = req.body;
+            let body = '';
+            req.on('data', chunk => body += chunk);
+            req.on('end', () => {
+                const { systolic, diastolic, pulse } = JSON.parse(body);
+                
+                if (!systolic || !diastolic) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Укажите давление'
+                    });
+                }
 
-            if (!systolic || !diastolic) {
-                return res.status(400).json({ 
-                    error: "Необходимо указать верхнее и нижнее давление" 
-                });
-            }
-
-            const reading = {
-                systolic: parseInt(systolic),
-                diastolic: parseInt(diastolic),
-                pulse: pulse ? parseInt(pulse) : null,
-                date: new Date().toISOString()
-            };
-
-            pressureReadings.push(reading);
-            return res.status(201).json({ 
-                success: true,
-                message: "Данные давления сохранены",
-                data: reading
+                const record = {
+                    systolic: Number(systolic),
+                    diastolic: Number(diastolic),
+                    pulse: pulse ? Number(pulse) : null,
+                    date: new Date().toISOString()
+                };
+                
+                pressureData.push(record);
+                return res.json({ success: true, data: record });
             });
         }
-
-        // Handle GET
-        if (req.method === 'GET') {
-            return res.status(200).json({
-                success: true,
-                data: pressureReadings
+        else if (req.method === 'GET') {
+            return res.json({ success: true, data: pressureData });
+        }
+        else {
+            return res.status(405).json({
+                success: false,
+                message: 'Метод не разрешен'
             });
         }
-
-        // Other methods
-        return res.status(405).json({ error: 'Method not allowed' });
-
     } catch (error) {
-        console.error('Health API error:', error);
-        return res.status(500).json({ 
-            error: "Внутренняя ошибка сервера",
-            details: error.message 
+        return res.status(500).json({
+            success: false,
+            message: 'Ошибка сервера'
         });
     }
 };
