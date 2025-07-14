@@ -1,27 +1,29 @@
 const { connectDB } = require('./db');
+const bcrypt = require('bcryptjs');
+const saltRounds = 10;
 
 module.exports = async (req, res) => {
-    // Устанавливаем заголовки CORS
+    // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Content-Type', 'application/json');
 
-    // Обработка OPTIONS запроса для CORS
+    // Handle OPTIONS request
     if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         return res.status(200).end();
     }
 
-    // Проверяем метод запроса
+    // Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ 
             success: false,
-            message: 'Метод не разрешен' 
+            message: 'Only POST requests allowed' 
         });
     }
 
     try {
-        // Читаем тело запроса
+        // Read request body
         let body = '';
         for await (const chunk of req) {
             body += chunk.toString();
@@ -29,44 +31,63 @@ module.exports = async (req, res) => {
 
         const { name, email, password, role } = JSON.parse(body);
 
-        // Валидация полей
+        // Validate fields
         if (!name || !email || !password || !role) {
             return res.status(400).json({
                 success: false,
-                message: 'Все поля обязательны'
+                message: 'All fields are required'
             });
         }
 
-        // Подключаемся к базе данных
+        // Validate email format
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid email format'
+            });
+        }
+
+        // Validate password strength
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password must be at least 6 characters'
+            });
+        }
+
+        // Connect to DB
         const db = await connectDB();
         const usersCollection = db.collection('users');
 
-        // Проверяем существование пользователя
+        // Check if user exists
         const existingUser = await usersCollection.findOne({ email });
         if (existingUser) {
             return res.status(409).json({
                 success: false,
-                message: 'Пользователь уже существует'
+                message: 'User already exists'
             });
         }
 
-        // Создаем нового пользователя
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // Create new user
         const newUser = { 
             name, 
             email, 
-            password, // В реальном проекте нужно хешировать!
+            password: hashedPassword,
             role,
             createdAt: new Date(),
             updatedAt: new Date()
         };
 
-        // Сохраняем пользователя в базу данных
+        // Insert user
         const result = await usersCollection.insertOne(newUser);
 
-        // Возвращаем успешный ответ
+        // Return success (without password)
         return res.status(201).json({
             success: true,
-            message: 'Регистрация успешна',
+            message: 'Registration successful',
             user: {
                 id: result.insertedId,
                 name: newUser.name,
@@ -76,19 +97,18 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Ошибка в auth:', error);
+        console.error('Auth error:', error);
         
-        // Обрабатываем разные типы ошибок
         if (error instanceof SyntaxError) {
             return res.status(400).json({
                 success: false,
-                message: 'Неверный формат JSON'
+                message: 'Invalid JSON format'
             });
         }
         
         return res.status(500).json({
             success: false,
-            message: 'Внутренняя ошибка сервера'
+            message: 'Internal server error'
         });
     }
 };

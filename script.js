@@ -3,16 +3,24 @@ let currentUser = null;
 let stream = null;
 let flashOn = false;
 
-// ==================== REGISTRATION ====================
+/// ==================== REGISTRATION ====================
 document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
+    const statusDiv = document.getElementById('reg-status');
     
     try {
+        // UI State
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Регистрация...';
+        submitBtn.textContent = 'Registering...';
+        statusDiv.textContent = '';
+        statusDiv.className = 'status-message';
+        
+        // Clear previous errors
+        document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
 
+        // Get form data
         const userData = {
             name: form.querySelector('#reg-name').value.trim(),
             email: form.querySelector('#reg-email').value.trim(),
@@ -20,38 +28,65 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             role: form.querySelector('#reg-role').value
         };
 
-        // Basic validation
-        if (!userData.email.includes('@')) {
-            throw new Error('Введите корректный email');
+        // Validate
+        if (!userData.name) {
+            showError('name-error', 'Please enter your name');
+            throw new Error('Name required');
+        }
+        
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+            showError('email-error', 'Please enter a valid email');
+            throw new Error('Invalid email');
+        }
+        
+        if (userData.password.length < 6) {
+            showError('password-error', 'Password must be 6+ characters');
+            throw new Error('Password too short');
         }
 
-        const response = await fetch('/api/auth/register', {
+        // API Call
+        const response = await fetch('/api/auth', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData)
         });
 
         const result = await response.json();
         
         if (!response.ok) {
-            throw new Error(result.message || result.error || 'Ошибка регистрации');
+            const errorMsg = result.message || 'Registration failed';
+            throw new Error(errorMsg);
         }
 
+        // Success
         currentUser = result.user;
-        alert(`Регистрация успешна! Добро пожаловать, ${userData.name}`);
+        localStorage.setItem('authToken', result.token || 'dummy-token'); // In real app, backend should return token
+        
+        statusDiv.textContent = `Welcome ${userData.name}! Registration successful.`;
+        statusDiv.className = 'status-message success';
         form.reset();
 
+        // Redirect or update UI
+        setTimeout(() => {
+            window.location.href = '/dashboard.html'; // Or show logged-in state
+        }, 1500);
+
     } catch (error) {
-        alert(`Ошибка: ${error.message}`);
         console.error('Registration error:', error);
+        statusDiv.textContent = error.message;
+        statusDiv.className = 'status-message error';
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Зарегистрироваться';
+        submitBtn.textContent = 'Register';
     }
 });
+
+function showError(elementId, message) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = message;
+    }
+}
 
 // ==================== BMI CALCULATOR ====================
 document.getElementById('calculate-bmi').addEventListener('click', () => {
