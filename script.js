@@ -3,7 +3,6 @@ let currentUser = null;
 let stream = null;
 let flashOn = false;
 
-/// ==================== REGISTRATION ====================
 document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target;
@@ -11,16 +10,16 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
     const statusDiv = document.getElementById('reg-status');
     
     try {
-        // UI State
+        // Изменяем состояние кнопки
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Registering...';
+        submitBtn.textContent = 'Регистрация...';
         statusDiv.textContent = '';
         statusDiv.className = 'status-message';
         
-        // Clear previous errors
+        // Очищаем предыдущие ошибки
         document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
 
-        // Get form data
+        // Получаем данные формы
         const userData = {
             name: form.querySelector('#reg-name').value.trim(),
             email: form.querySelector('#reg-email').value.trim(),
@@ -28,23 +27,23 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             role: form.querySelector('#reg-role').value
         };
 
-        // Validate
+        // Валидация
         if (!userData.name) {
-            showError('name-error', 'Please enter your name');
-            throw new Error('Name required');
+            showError('name-error', 'Пожалуйста, введите ваше имя');
+            throw new Error('Требуется имя');
         }
         
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
-            showError('email-error', 'Please enter a valid email');
-            throw new Error('Invalid email');
+            showError('email-error', 'Пожалуйста, введите корректный email');
+            throw new Error('Неверный формат email');
         }
         
         if (userData.password.length < 6) {
-            showError('password-error', 'Password must be 6+ characters');
-            throw new Error('Password too short');
+            showError('password-error', 'Пароль должен содержать минимум 6 символов');
+            throw new Error('Слишком короткий пароль');
         }
 
-        // API Call
+        // Отправка запроса
         const response = await fetch('/api/auth', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -54,30 +53,30 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         const result = await response.json();
         
         if (!response.ok) {
-            const errorMsg = result.message || 'Registration failed';
+            const errorMsg = result.message || 'Ошибка регистрации';
             throw new Error(errorMsg);
         }
 
-        // Success
+        // Успешная регистрация
         currentUser = result.user;
-        localStorage.setItem('authToken', result.token || 'dummy-token'); // In real app, backend should return token
+        localStorage.setItem('authToken', 'dummy-token'); // В реальном приложении используйте токен из ответа
         
-        statusDiv.textContent = `Welcome ${userData.name}! Registration successful.`;
+        statusDiv.textContent = `Добро пожаловать, ${userData.name}! Регистрация успешна.`;
         statusDiv.className = 'status-message success';
         form.reset();
 
-        // Redirect or update UI
+        // Перенаправление или обновление интерфейса
         setTimeout(() => {
-            window.location.href = '/dashboard.html'; // Or show logged-in state
+            window.location.href = '/dashboard.html';
         }, 1500);
 
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('Ошибка регистрации:', error);
         statusDiv.textContent = error.message;
         statusDiv.className = 'status-message error';
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Register';
+        submitBtn.textContent = 'Зарегистрироваться';
     }
 });
 

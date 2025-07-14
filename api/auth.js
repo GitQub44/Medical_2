@@ -3,27 +3,27 @@ const bcrypt = require('bcryptjs');
 const saltRounds = 10;
 
 module.exports = async (req, res) => {
-    // Set CORS headers
+    // Устанавливаем заголовки CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Content-Type', 'application/json');
 
-    // Handle OPTIONS request
+    // Обработка OPTIONS запроса
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
 
-    // Only allow POST requests
+    // Проверяем метод запроса
     if (req.method !== 'POST') {
         return res.status(405).json({ 
             success: false,
-            message: 'Only POST requests allowed' 
+            message: 'Разрешены только POST-запросы' 
         });
     }
 
     try {
-        // Read request body
+        // Читаем тело запроса
         let body = '';
         for await (const chunk of req) {
             body += chunk.toString();
@@ -31,47 +31,47 @@ module.exports = async (req, res) => {
 
         const { name, email, password, role } = JSON.parse(body);
 
-        // Validate fields
+        // Валидация полей
         if (!name || !email || !password || !role) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required'
+                message: 'Все поля обязательны для заполнения'
             });
         }
 
-        // Validate email format
+        // Проверка формата email
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid email format'
+                message: 'Неверный формат email'
             });
         }
 
-        // Validate password strength
+        // Проверка длины пароля
         if (password.length < 6) {
             return res.status(400).json({
                 success: false,
-                message: 'Password must be at least 6 characters'
+                message: 'Пароль должен содержать минимум 6 символов'
             });
         }
 
-        // Connect to DB
+        // Подключаемся к базе данных
         const db = await connectDB();
         const usersCollection = db.collection('users');
 
-        // Check if user exists
+        // Проверяем существование пользователя
         const existingUser = await usersCollection.findOne({ email });
         if (existingUser) {
             return res.status(409).json({
                 success: false,
-                message: 'User already exists'
+                message: 'Пользователь с таким email уже существует'
             });
         }
 
-        // Hash password
+        // Хешируем пароль
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Create new user
+        // Создаем нового пользователя
         const newUser = { 
             name, 
             email, 
@@ -81,13 +81,13 @@ module.exports = async (req, res) => {
             updatedAt: new Date()
         };
 
-        // Insert user
+        // Сохраняем пользователя
         const result = await usersCollection.insertOne(newUser);
 
-        // Return success (without password)
+        // Успешный ответ
         return res.status(201).json({
             success: true,
-            message: 'Registration successful',
+            message: 'Регистрация успешно завершена',
             user: {
                 id: result.insertedId,
                 name: newUser.name,
@@ -97,18 +97,18 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Auth error:', error);
+        console.error('Ошибка регистрации:', error);
         
         if (error instanceof SyntaxError) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid JSON format'
+                message: 'Неверный формат данных'
             });
         }
         
         return res.status(500).json({
             success: false,
-            message: 'Internal server error'
+            message: 'Внутренняя ошибка сервера'
         });
     }
 };
