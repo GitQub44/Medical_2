@@ -1,4 +1,5 @@
-const users = [];
+// api/auth.js
+const { connectDB } = require('./db');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,7 +20,7 @@ module.exports = async (req, res) => {
     try {
         let body = '';
         req.on('data', chunk => body += chunk);
-        req.on('end', () => {
+        req.on('end', async () => {
             try {
                 const { name, email, password, role } = JSON.parse(body);
 
@@ -30,34 +31,44 @@ module.exports = async (req, res) => {
                     });
                 }
 
-                if (users.some(u => u.email === email)) {
+                // Connect to MongoDB
+                const db = await connectDB();
+                const usersCollection = db.collection('users');
+
+                // Check if user exists
+                const existingUser = await usersCollection.findOne({ email });
+                if (existingUser) {
                     return res.status(409).json({
                         success: false,
                         message: 'Пользователь уже существует'
                     });
                 }
 
+                // Create new user
                 const newUser = { 
-                    id: Date.now().toString(),
                     name, 
                     email, 
-                    password, 
+                    password, // Note: In production, you should hash this!
                     role,
-                    createdAt: new Date().toISOString()
+                    createdAt: new Date(),
+                    updatedAt: new Date()
                 };
-                users.push(newUser);
+
+                // Insert into MongoDB
+                const result = await usersCollection.insertOne(newUser);
 
                 return res.status(201).json({
                     success: true,
                     message: 'Регистрация успешна',
                     user: {
-                        id: newUser.id,
+                        id: result.insertedId,
                         name: newUser.name,
                         email: newUser.email,
                         role: newUser.role
                     }
                 });
             } catch (error) {
+                console.error('Error in auth:', error);
                 return res.status(400).json({
                     success: false,
                     message: 'Неверный формат данных'
@@ -65,6 +76,7 @@ module.exports = async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Server error:', error);
         return res.status(500).json({
             success: false,
             message: 'Ошибка сервера'
