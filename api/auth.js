@@ -1,15 +1,18 @@
-// api/auth.js
 const { connectDB } = require('./db');
 
 module.exports = async (req, res) => {
+    // Устанавливаем заголовки CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json');
 
+    // Обработка OPTIONS запроса для CORS
     if (req.method === 'OPTIONS') {
         res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         return res.status(200).end();
     }
 
+    // Проверяем метод запроса
     if (req.method !== 'POST') {
         return res.status(405).json({ 
             success: false,
@@ -18,23 +21,15 @@ module.exports = async (req, res) => {
     }
 
     try {
+        // Читаем тело запроса
         let body = '';
-        req.on('data', chunk => body += chunk);
-        
-        // Wrap the event handler in a Promise
-        const requestData = await new Promise((resolve, reject) => {
-            req.on('end', () => {
-                try {
-                    resolve(JSON.parse(body));
-                } catch (error) {
-                    reject(error);
-                }
-            });
-            req.on('error', reject);
-        });
+        for await (const chunk of req) {
+            body += chunk.toString();
+        }
 
-        const { name, email, password, role } = requestData;
+        const { name, email, password, role } = JSON.parse(body);
 
+        // Валидация полей
         if (!name || !email || !password || !role) {
             return res.status(400).json({
                 success: false,
@@ -42,11 +37,11 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Connect to MongoDB
+        // Подключаемся к базе данных
         const db = await connectDB();
         const usersCollection = db.collection('users');
 
-        // Check if user exists
+        // Проверяем существование пользователя
         const existingUser = await usersCollection.findOne({ email });
         if (existingUser) {
             return res.status(409).json({
@@ -55,19 +50,20 @@ module.exports = async (req, res) => {
             });
         }
 
-        // Create new user
+        // Создаем нового пользователя
         const newUser = { 
             name, 
             email, 
-            password, // Remember to hash this in production!
+            password, // В реальном проекте нужно хешировать!
             role,
             createdAt: new Date(),
             updatedAt: new Date()
         };
 
-        // Insert into MongoDB
+        // Сохраняем пользователя в базу данных
         const result = await usersCollection.insertOne(newUser);
 
+        // Возвращаем успешный ответ
         return res.status(201).json({
             success: true,
             message: 'Регистрация успешна',
@@ -80,18 +76,19 @@ module.exports = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Error in auth:', error);
+        console.error('Ошибка в auth:', error);
         
+        // Обрабатываем разные типы ошибок
         if (error instanceof SyntaxError) {
             return res.status(400).json({
                 success: false,
-                message: 'Неверный формат данных'
+                message: 'Неверный формат JSON'
             });
         }
         
         return res.status(500).json({
             success: false,
-            message: 'Ошибка сервера'
+            message: 'Внутренняя ошибка сервера'
         });
     }
 };
