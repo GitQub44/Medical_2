@@ -1,315 +1,518 @@
-// ==================== GLOBAL VARIABLES ====================
+// Global Variables
 let currentUser = null;
-let stream = null;
-let flashOn = false;
+let socket = null;
+let calendar = null;
 
-// ==================== DOM LOAD EVENT ====================
+// DOM Elements
+const authSection = document.getElementById('authSection');
+const appointmentSection = document.getElementById('appointmentSection');
+const chatSection = document.getElementById('chatSection');
+const doctorCabinet = document.getElementById('doctorCabinet');
+const navLinks = document.querySelectorAll('#navLinks a');
+
+// Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-    initializeRegistration();
-    initializeCamera();
-    initializeBMICalculator();
-    initializeAppointment();
-    initializeChatbot();
+    checkAuthState();
+    setupEventListeners();
+    hideAllSections();
+    showSection('home');
 });
 
-// ==================== REGISTRATION SYSTEM ====================
-function initializeRegistration() {
-    const registerForm = document.getElementById('register-form');
-    if (!registerForm) return;
-
-    registerForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const submitBtn = registerForm.querySelector('button[type="submit"]');
-        const statusDiv = document.createElement('div');
-        statusDiv.className = 'status-message';
-        registerForm.appendChild(statusDiv);
-
-        try {
-            // UI Feedback
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Регистрация...';
-            statusDiv.textContent = '';
-            
-            // Get form data
-            const userData = {
-                name: document.getElementById('reg-name').value.trim(),
-                email: document.getElementById('reg-email').value.trim(),
-                password: document.getElementById('reg-password').value,
-                role: document.getElementById('reg-role').value
-            };
-
-            // Validation
-            if (!userData.name) throw new Error('Введите ваше имя');
-            if (!userData.email.includes('@')) throw new Error('Неверный формат email');
-            if (userData.password.length < 6) throw new Error('Пароль должен быть не менее 6 символов');
-
-            // API Request
-            const response = await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userData)
-            });
-
-            const result = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(result.message || 'Ошибка регистрации');
-            }
-
-            // Success
-            currentUser = result.user;
-            statusDiv.textContent = `Регистрация успешна! Добро пожаловать, ${userData.name}`;
-            statusDiv.className = 'status-message success';
-            registerForm.reset();
-
-        } catch (error) {
-            console.error('Ошибка регистрации:', error);
-            statusDiv.textContent = error.message;
-            statusDiv.className = 'status-message error';
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Зарегистрироваться';
-        }
-    });
+function hideAllSections() {
+    authSection.style.display = 'none';
+    appointmentSection.style.display = 'none';
+    chatSection.style.display = 'none';
+    doctorCabinet.style.display = 'none';
 }
 
-// ==================== CAMERA SYSTEM ====================
-function initializeCamera() {
-    const startCameraBtn = document.getElementById('start-camera');
-    const toggleFlashBtn = document.getElementById('toggle-flash');
-    const takePhotoBtn = document.getElementById('take-photo');
-    const cameraView = document.getElementById('camera-view');
-    const photoResult = document.getElementById('photo-result');
-
-    if (!startCameraBtn) return;
-
-    startCameraBtn.addEventListener('click', async () => {
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment' } 
-            });
-            cameraView.srcObject = stream;
-            takePhotoBtn.disabled = false;
-            startCameraBtn.textContent = 'Камера включена';
-            startCameraBtn.disabled = true;
-        } catch (err) {
-            alert("Ошибка доступа к камере: " + err.message);
-        }
-    });
-
-    toggleFlashBtn.addEventListener('click', function() {
-        flashOn = !flashOn;
-        this.querySelector('i').className = flashOn ? 'fas fa-bolt' : 'far fa-bolt';
-    });
-
-    takePhotoBtn.addEventListener('click', function() {
-        const ctx = photoResult.getContext('2d');
-        photoResult.width = cameraView.videoWidth;
-        photoResult.height = cameraView.videoHeight;
-        
-        // Flash effect
-        if (flashOn) {
-            document.body.style.backgroundColor = 'white';
-            setTimeout(() => document.body.style.backgroundColor = '', 100);
-        }
-        
-        ctx.drawImage(cameraView, 0, 0, photoResult.width, photoResult.height);
-        photoResult.style.display = 'block';
-        cameraView.style.display = 'none';
-        this.disabled = true;
-    });
-}
-
-// ==================== BMI CALCULATOR ====================
-function initializeBMICalculator() {
-    const calculateBtn = document.getElementById('calculate-bmi');
-    if (!calculateBtn) return;
-
-    calculateBtn.addEventListener('click', () => {
-        try {
-            const weight = parseFloat(document.getElementById('bmi-weight').value);
-            const height = parseFloat(document.getElementById('bmi-height').value) / 100;
-            
-            if (isNaN(weight)) throw new Error('Введите корректный вес');
-            if (isNaN(height) || height <= 0) throw new Error('Введите корректный рост');
-
-            const bmi = (weight / (height * height)).toFixed(1);
-            updateBmiDisplay(bmi);
-            
-        } catch (error) {
-            alert(error.message);
-        }
-    });
-
-    function updateBmiDisplay(bmi) {
-        const bmiValue = document.getElementById('bmi-value');
-        const bmiCategory = document.getElementById('bmi-category');
-        const bmiAdvice = document.getElementById('bmi-advice');
-        const bmiIndicator = document.querySelector('.bmi-indicator');
-        const consultBtn = document.getElementById('bmi-consult-btn');
-
-        let position, category, color, advice;
-        
-        if (bmi < 16) {
-            position = 0;
-            category = 'Выраженный дефицит';
-            color = 'red';
-            advice = 'Рекомендуется срочная консультация врача';
-        } else if (bmi < 18.5) {
-            position = 25;
-            category = 'Недостаточный вес';
-            color = 'orange';
-            advice = 'Рекомендуется консультация диетолога';
-        } else if (bmi < 25) {
-            position = 50;
-            category = 'Нормальный вес';
-            color = 'green';
-            advice = 'Ваш вес в норме';
-        } else if (bmi < 30) {
-            position = 75;
-            category = 'Избыточный вес';
-            color = 'orange';
-            advice = 'Рекомендуется увеличить физическую активность';
-        } else {
-            position = 100;
-            category = 'Ожирение';
-            color = 'red';
-            advice = 'Рекомендуется консультация врача';
-        }
-
-        bmiIndicator.style.left = `${position}%`;
-        bmiValue.innerHTML = `ИМТ: <strong>${bmi}</strong>`;
-        bmiCategory.innerHTML = `Категория: <span class="${color}-text">${category}</span>`;
-        bmiAdvice.textContent = advice;
-        consultBtn.style.display = (bmi < 18.5 || bmi >= 25) ? 'block' : 'none';
+// Check if user is logged in
+function checkAuthState() {
+    const token = localStorage.getItem('token');
+    if (token) {
+        verifyToken(token);
     }
 }
 
-// ==================== DOCTOR APPOINTMENT ====================
-function initializeAppointment() {
-    const healthCategory = document.getElementById('health-category');
-    const appointmentForm = document.getElementById('appointment-form');
-    
-    if (!healthCategory || !appointmentForm) return;
-
-    healthCategory.addEventListener('change', async function() {
-        if (!this.value) return;
-        
-        try {
-            const response = await fetch(`/api/doctors?specialty=${this.value}`);
-            if (!response.ok) throw new Error('Ошибка загрузки врачей');
-            
-            const doctors = await response.json();
-            const select = document.getElementById('select-doctor');
-            
-            select.innerHTML = '<option value="">Выберите врача</option>';
-            doctors.forEach(doctor => {
-                const option = document.createElement('option');
-                option.value = doctor.id;
-                option.textContent = `${doctor.name} (${doctor.specialty})`;
-                select.appendChild(option);
-            });
-            
-            select.disabled = false;
-        } catch (error) {
-            alert(error.message);
+function verifyToken(token) {
+    fetch('/api/auth/verify', {
+        headers: {
+            'Authorization': `Bearer ${token}`
         }
-    });
-
-    appointmentForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const submitBtn = appointmentForm.querySelector('button[type="submit"]');
-        const statusDiv = document.getElementById('appointment-status');
-        
-        try {
-            submitBtn.disabled = true;
-            statusDiv.style.display = 'none';
-
-            if (!currentUser) {
-                throw new Error('Пожалуйста, сначала зарегистрируйтесь');
-            }
-
-            const appointmentData = {
-                patientId: currentUser.id,
-                doctorId: document.getElementById('select-doctor').value,
-                category: document.getElementById('health-category').value,
-                symptoms: document.getElementById('symptoms').value,
-                urgency: document.getElementById('urgency-level').value
-            };
-
-            const response = await fetch('/api/appointments', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(appointmentData)
-            });
-
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message || result.error);
-
-            statusDiv.textContent = `Запись успешна! Номер в очереди: ${result.queuePosition}`;
-            statusDiv.style.backgroundColor = 'var(--success-green)';
-            statusDiv.style.display = 'block';
-            
-        } catch (error) {
-            statusDiv.textContent = `Ошибка: ${error.message}`;
-            statusDiv.style.backgroundColor = 'var(--emergency-red)';
-            statusDiv.style.display = 'block';
-            console.error('Appointment error:', error);
-        } finally {
-            submitBtn.disabled = false;
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.user) {
+            currentUser = data.user;
+            setupAuthenticatedUI();
+            initializeSocket();
         }
+    })
+    .catch(() => {
+        localStorage.removeItem('token');
     });
 }
 
-// ==================== CHATBOT SYSTEM ====================
-function initializeChatbot() {
-    const sendBtn = document.getElementById('send-message');
-    const userInput = document.getElementById('user-input');
-    
-    if (!sendBtn || !userInput) return;
+// Setup event listeners
+function setupEventListeners() {
+    // Navigation
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection(link.dataset.section);
+        });
+    });
 
-    sendBtn.addEventListener('click', sendMessage);
-    userInput.addEventListener('keypress', (e) => {
+    // Auth forms
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+    document.getElementById('registerForm').addEventListener('submit', handleRegister);
+    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+    // Appointment form
+    document.querySelectorAll('input[name="appointmentType"]').forEach(radio => {
+        radio.addEventListener('change', updateAppointmentTypeUI);
+    });
+
+    document.getElementById('doctorSpecialty').addEventListener('change', loadDoctors);
+    document.getElementById('bookAppointmentForm').addEventListener('submit', bookAppointment);
+
+    // Chat
+    document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
+    document.getElementById('sendFileBtn').addEventListener('click', uploadFile);
+    document.getElementById('refreshAppointmentsBtn').addEventListener('click', loadDoctorAppointments);
+}
 
-    async function sendMessage() {
-        const message = userInput.value.trim();
-        if (!message) return;
+function updateAppointmentTypeUI() {
+    document.getElementById('durationField').style.display = 
+        document.querySelector('input[name="appointmentType"]:checked').value === 'video' ? 'block' : 'none';
+}
 
-        addMessage(message, 'user');
-        userInput.value = '';
-        
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({ message })
-            });
+// Show specific section
+function showSection(section) {
+    hideAllSections();
 
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'Ошибка чата');
+    switch(section) {
+        case 'home':
+            if (currentUser) {
+                showSection(currentUser.role === 'doctor' ? 'doctor' : 'appointments');
+            } else {
+                showAuthSection('login');
+            }
+            break;
+        case 'login':
+            showAuthSection('login');
+            break;
+        case 'register':
+            showAuthSection('register');
+            break;
+        case 'appointments':
+            appointmentSection.style.display = 'block';
+            loadAppointments();
+            initCalendar();
+            break;
+        case 'chat':
+            chatSection.style.display = 'block';
+            break;
+        case 'doctor':
+            doctorCabinet.style.display = 'block';
+            loadDoctorAppointments();
+            break;
+    }
 
-            addMessage(data.reply, 'bot');
-        } catch (error) {
-            addMessage("Извините, произошла ошибка соединения", 'bot');
-            console.error('Chat error:', error);
+    updateActiveNavLink(section);
+}
+
+function showAuthSection(formType) {
+    authSection.style.display = 'block';
+    document.getElementById('loginForm').style.display = formType === 'login' ? 'block' : 'none';
+    document.getElementById('registerForm').style.display = formType === 'register' ? 'block' : 'none';
+}
+
+function updateActiveNavLink(section) {
+    navLinks.forEach(link => {
+        link.classList.toggle('active', link.dataset.section === section);
+    });
+}
+
+// Authentication handlers
+function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.token) {
+            localStorage.setItem('token', data.token);
+            currentUser = data.user;
+            setupAuthenticatedUI();
+            initializeSocket();
+            showSection(currentUser.role === 'doctor' ? 'doctor' : 'appointments');
+        } else {
+            showError(data.error || 'Ошибка входа');
         }
-    }
+    })
+    .catch(() => {
+        showError('Ошибка соединения');
+    });
+}
 
-    function addMessage(text, sender) {
-        const container = document.getElementById('chat-messages');
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `chat-message ${sender}-message`;
-        messageDiv.textContent = text;
-        container.appendChild(messageDiv);
-        container.scrollTop = container.scrollHeight;
+function handleRegister(e) {
+    e.preventDefault();
+    const name = document.getElementById('regName').value;
+    const email = document.getElementById('regEmail').value;
+    const password = document.getElementById('regPassword').value;
+    const role = document.getElementById('regRole').value;
+
+    fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name, email, password, role })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.user) {
+            alert('Регистрация успешна! Теперь войдите в систему.');
+            showSection('login');
+        } else {
+            showError(data.error || 'Ошибка регистрации');
+        }
+    })
+    .catch(() => {
+        showError('Ошибка соединения');
+    });
+}
+
+function handleLogout() {
+    localStorage.removeItem('token');
+    currentUser = null;
+    if (socket) socket.disconnect();
+    setupUnauthenticatedUI();
+    showSection('home');
+}
+
+function showError(message) {
+    alert(message); // Replace with your preferred error display method
+}
+
+// UI State Management
+function setupAuthenticatedUI() {
+    document.getElementById('authLinks').style.display = 'none';
+    document.getElementById('userMenu').style.display = 'block';
+    document.getElementById('userName').textContent = currentUser.name;
+    
+    if (currentUser.role === 'doctor') {
+        document.querySelector('[data-section="doctor"]').style.display = 'inline-block';
     }
+}
+
+function setupUnauthenticatedUI() {
+    document.getElementById('authLinks').style.display = 'block';
+    document.getElementById('userMenu').style.display = 'none';
+}
+
+// Appointment functions
+function loadDoctors() {
+    const specialty = document.getElementById('doctorSpecialty').value;
+    if (!specialty) return;
+
+    fetch(`/api/doctors?specialty=${specialty}`)
+    .then(response => response.json())
+    .then(data => {
+        const select = document.getElementById('doctorSelect');
+        select.innerHTML = data.doctors.map(doctor => 
+            `<option value="${doctor.id}">${doctor.name}</option>`
+        ).join('');
+        select.disabled = false;
+    })
+    .catch(() => {
+        showError('Ошибка загрузки врачей');
+    });
+}
+
+function bookAppointment(e) {
+    e.preventDefault();
+    
+    const appointmentData = {
+        doctorId: document.getElementById('doctorSelect').value,
+        type: document.querySelector('input[name="appointmentType"]:checked').value,
+        date: document.getElementById('appointmentDate').value,
+        duration: document.getElementById('appointmentDuration').value,
+        notes: document.getElementById('appointmentNotes').value,
+        patientId: currentUser.id
+    };
+
+    fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(appointmentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Запись успешно создана!');
+            loadAppointments();
+        } else {
+            showError(data.error || 'Ошибка при создании записи');
+        }
+    })
+    .catch(() => {
+        showError('Ошибка соединения');
+    });
+}
+
+function loadAppointments() {
+    fetch('/api/appointments', {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        renderAppointments(data.appointments, 'appointmentsList');
+    })
+    .catch(() => {
+        showError('Ошибка загрузки записей');
+    });
+}
+
+function renderAppointments(appointments, containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = appointments.map(appointment => `
+        <div class="appointment-card">
+            <h4>${formatDate(appointment.date)}</h4>
+            <p>Тип: ${getAppointmentType(appointment.type)}</p>
+            <p>Доктор: ${appointment.doctorName}</p>
+            <p>Статус: ${appointment.status}</p>
+            <div class="appointment-actions">
+                ${appointment.status === 'pending' ? `
+                <button onclick="cancelAppointment('${appointment.id}')">Отменить</button>
+                <button onclick="rescheduleAppointment('${appointment.id}')">Перенести</button>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function initCalendar() {
+    const calendarEl = document.getElementById('appointmentCalendar');
+    calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        dateClick: function(info) {
+            document.getElementById('appointmentDate').value = info.dateStr + 'T10:00';
+        },
+        events: '/api/appointments/calendar'
+    });
+    calendar.render();
+}
+
+// Chat functions
+function initializeSocket() {
+    socket = io();
+
+    socket.on('connect', () => {
+        if (currentUser) {
+            socket.emit('authenticate', { token: localStorage.getItem('token') });
+        }
+    });
+
+    socket.on('newMessage', addMessage);
+    socket.on('newFile', addFileMessage);
+}
+
+function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    socket.emit('sendMessage', {
+        content: message,
+        appointmentId: getCurrentAppointmentId()
+    });
+
+    addMessage({
+        sender: currentUser.id,
+        content: message,
+        timestamp: new Date()
+    });
+
+    input.value = '';
+}
+
+function uploadFile() {
+    const fileInput = document.getElementById('fileUpload');
+    if (fileInput.files.length === 0) return;
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    formData.append('appointmentId', getCurrentAppointmentId());
+
+    fetch('/api/files', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            fileInput.value = '';
+        }
+    })
+    .catch(() => {
+        showError('Ошибка загрузки файла');
+    });
+}
+
+function addMessage(message) {
+    const isCurrentUser = message.sender === currentUser.id;
+    const messagesContainer = document.getElementById('chatMessages');
+    
+    messagesContainer.innerHTML += `
+        <div class="message ${isCurrentUser ? 'sent' : 'received'}">
+            <div class="message-content">${message.content}</div>
+            <div class="message-time">${formatTime(message.timestamp)}</div>
+        </div>
+    `;
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function addFileMessage(file) {
+    const messagesContainer = document.getElementById('chatMessages');
+    
+    messagesContainer.innerHTML += `
+        <div class="message ${file.sender === currentUser.id ? 'sent' : 'received'}">
+            <div class="file-message">
+                <i class="fas fa-file"></i>
+                <a href="${file.url}" target="_blank">${file.name}</a>
+            </div>
+            <div class="message-time">${formatTime(file.timestamp)}</div>
+        </div>
+    `;
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function getCurrentAppointmentId() {
+    // Implement logic to get current appointment ID from UI
+    return 'current-appointment-id'; // Replace with actual implementation
+}
+
+// Doctor specific functions
+function loadDoctorAppointments() {
+    fetch('/api/appointments/doctor', {
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        renderAppointments(data.appointments, 'upcomingAppointments');
+    })
+    .catch(() => {
+        showError('Ошибка загрузки записей');
+    });
+}
+
+// Appointment actions
+function cancelAppointment(appointmentId) {
+    if (!confirm('Вы уверены, что хотите отменить запись?')) return;
+
+    fetch(`/api/appointments/${appointmentId}/cancel`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Запись отменена');
+            currentUser.role === 'doctor' ? loadDoctorAppointments() : loadAppointments();
+        }
+    })
+    .catch(() => {
+        showError('Ошибка отмены записи');
+    });
+}
+
+function rescheduleAppointment(appointmentId) {
+    const newDate = prompt('Введите новую дату и время (YYYY-MM-DDTHH:MM):');
+    if (!newDate) return;
+
+    fetch(`/api/appointments/${appointmentId}/reschedule`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ newDate })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Запись перенесена');
+            loadAppointments();
+        }
+    })
+    .catch(() => {
+        showError('Ошибка переноса записи');
+    });
+}
+
+function approveAppointment(appointmentId) {
+    fetch(`/api/appointments/${appointmentId}/approve`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Запись подтверждена');
+            loadDoctorAppointments();
+        }
+    })
+    .catch(() => {
+        showError('Ошибка подтверждения записи');
+    });
+}
+
+// Utility functions
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    return new Date(dateString).toLocaleDateString('ru-RU', options);
+}
+
+function formatTime(dateString) {
+    return new Date(dateString).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+
+function getAppointmentType(type) {
+    const types = {
+        'in-person': 'Личный прием',
+        'video': 'Видеоконсультация',
+        'chat': 'Чат-консультация'
+    };
+    return types[type] || type;
 }

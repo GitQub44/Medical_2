@@ -23,6 +23,230 @@
   padding: 0;
   font-family: var(--font-main);
 }
+/* Navigation Styles */
+nav ul {
+  display: flex;
+  list-style: none;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+nav a {
+  color: var(--white);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+nav a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+nav a.active {
+  background-color: rgba(255, 255, 255, 0.3);
+  font-weight: 600;
+}
+
+#authLinks, #userMenu {
+  display: flex;
+  gap: 1rem;
+}
+
+#userMenu {
+  align-items: center;
+  gap: 1.5rem;
+}
+
+#userName {
+  font-weight: 600;
+}
+
+/* Appointment Type Selection */
+.appointment-type {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.appointment-type label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background-color: var(--light-gray);
+  transition: all 0.3s;
+}
+
+.appointment-type label:hover {
+  background-color: #e0e0e0;
+}
+
+.appointment-type input[type="radio"] {
+  width: auto;
+  margin: 0;
+}
+
+/* Calendar Styles */
+#appointmentCalendar {
+  margin: 2rem 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.fc-header-toolbar {
+  padding: 1rem;
+  margin-bottom: 0 !important;
+}
+
+.fc-daygrid-event {
+  background-color: var(--primary-blue);
+  border: none;
+}
+
+/* Appointment Cards */
+.appointment-card {
+  background: var(--light-gray);
+  border-radius: 10px;
+  padding: 1.2rem;
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--primary-blue);
+}
+
+.appointment-card h4 {
+  color: var(--primary-blue);
+  margin-bottom: 0.5rem;
+}
+
+.appointment-actions {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.appointment-actions button {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* Chat Section Enhancements */
+#chatMessages {
+  min-height: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 1rem;
+  background: var(--light-gray);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.message {
+  margin-bottom: 1rem;
+  padding: 0.8rem 1.2rem;
+  border-radius: 12px;
+  max-width: 70%;
+  position: relative;
+}
+
+.message.sent {
+  background-color: var(--primary-blue);
+  color: white;
+  margin-left: auto;
+  border-bottom-right-radius: 4px;
+}
+
+.message.received {
+  background-color: var(--light-gray);
+  margin-right: auto;
+  border-bottom-left-radius: 4px;
+}
+
+.message-time {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  text-align: right;
+  margin-top: 0.3rem;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.chat-input input {
+  margin: 0;
+  flex: 1;
+}
+
+.file-upload {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.file-upload input[type="file"] {
+  flex: 1;
+  padding: 0;
+  border: none;
+}
+
+.file-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.file-message a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.file-message a:hover {
+  color: var(--primary-blue);
+}
+
+/* Doctor Cabinet Styles */
+#upcomingAppointments {
+  margin-top: 1.5rem;
+}
+
+.doctor-controls {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  nav ul {
+    gap: 0.8rem;
+  }
+  
+  .appointment-type {
+    gap: 0.8rem;
+  }
+  
+  .message {
+    max-width: 85%;
+  }
+  
+  .chat-input, .file-upload {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  
+  .chat-input input, .file-upload input[type="file"] {
+    width: 100%;
+  }
+}
 
 body {
   background-color: var(--light-gray);

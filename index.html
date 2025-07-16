@@ -4,120 +4,138 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QUBI - Медицинский Мониторинг</title>
-    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <div class="logo">
             <i class="fas fa-hospital-alt"></i>
-            <span class="logo-text">QUBI</span>
+            <span>QUBI</span>
         </div>
-        <p>Профессиональная система мониторинга здоровья</p>
+        <nav>
+            <ul id="navLinks">
+                <li><a href="#" class="active" data-section="home">Главная</a></li>
+                <li><a href="#" data-section="appointments">Записи</a></li>
+                <li><a href="#" data-section="chat">Чат</a></li>
+                <li id="authLinks">
+                    <a href="#" data-section="login">Вход</a>
+                    <a href="#" data-section="register">Регистрация</a>
+                </li>
+                <li id="userMenu">
+                    <span id="userName"></span>
+                    <button id="logoutBtn">Выйти</button>
+                </li>
+            </ul>
+        </nav>
     </header>
 
-    <main class="container">
-        <!-- Registration Section -->
-        <section id="auth-section" class="card">
-            <h2><i class="fas fa-user-plus"></i> Регистрация</h2>
-            <form id="register-form">
-                <input type="text" id="reg-name" placeholder="ФИО" required>
-                <input type="email" id="reg-email" placeholder="Email" required>
-                <input type="password" id="reg-password" placeholder="Пароль" required>
-                <select id="reg-role">
-                    <option value="patient">Пациент</option>
-                    <option value="doctor">Врач</option>
+    <main>
+        <!-- Auth Section -->
+        <section id="authSection" class="card">
+            <div id="loginForm">
+                <h2><i class="fas fa-sign-in-alt"></i> Вход</h2>
+                <form id="loginForm">
+                    <input type="email" id="loginEmail" placeholder="Email" required>
+                    <input type="password" id="loginPassword" placeholder="Пароль" required>
+                    <button type="submit">Войти</button>
+                </form>
+            </div>
+            <div id="registerForm">
+                <h2><i class="fas fa-user-plus"></i> Регистрация</h2>
+                <form id="registerForm">
+                    <input type="text" id="regName" placeholder="ФИО" required>
+                    <input type="email" id="regEmail" placeholder="Email" required>
+                    <input type="password" id="regPassword" placeholder="Пароль" required>
+                    <select id="regRole">
+                        <option value="patient">Пациент</option>
+                        <option value="doctor">Врач</option>
+                    </select>
+                    <button type="submit">Зарегистрироваться</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Appointment Section -->
+        <section id="appointmentSection" class="card">
+            <h2><i class="fas fa-calendar-plus"></i> Новая запись</h2>
+            <div class="appointment-type">
+                <label>
+                    <input type="radio" name="appointmentType" value="in-person" checked>
+                    <i class="fas fa-hospital"></i> Личный прием
+                </label>
+                <label>
+                    <input type="radio" name="appointmentType" value="video">
+                    <i class="fas fa-video"></i> Видеоконсультация
+                </label>
+                <label>
+                    <input type="radio" name="appointmentType" value="chat">
+                    <i class="fas fa-comments"></i> Чат-консультация
+                </label>
+            </div>
+            <div id="durationField">
+                <label>Длительность (мин):</label>
+                <select id="appointmentDuration">
+                    <option value="15">15</option>
+                    <option value="30" selected>30</option>
+                    <option value="45">45</option>
+                    <option value="60">60</option>
                 </select>
-                <button type="submit">Зарегистрироваться</button>
+            </div>
+            <form id="bookAppointmentForm">
+                <select id="doctorSpecialty" required>
+                    <option value="">Выберите специальность</option>
+                    <option value="cardiology">Кардиолог</option>
+                    <option value="neurology">Невролог</option>
+                    <option value="pediatrics">Педиатр</option>
+                </select>
+                <select id="doctorSelect" required>
+                    <option value="">Сначала выберите специальность</option>
+                </select>
+                <input type="datetime-local" id="appointmentDate" required>
+                <textarea id="appointmentNotes" placeholder="Примечания"></textarea>
+                <button type="submit">Записаться</button>
             </form>
+            <div id="appointmentCalendar"></div>
+            <div id="myAppointments">
+                <h3>Мои записи</h3>
+                <div id="appointmentsList"></div>
+            </div>
         </section>
 
-        <!-- Medical Camera -->
-        <section id="camera-section" class="card">
-            <h2><i class="fas fa-camera"></i> Медицинская камера</h2>
-            <div class="camera-container">
-                <video id="camera-view" autoplay playsinline></video>
-                <canvas id="photo-result"></canvas>
-            </div>
-            <div class="camera-controls">
-                <button id="start-camera"><i class="fas fa-video"></i> Включить камеру</button>
-                <button id="toggle-flash"><i class="far fa-bolt"></i> Вспышка</button>
-                <button id="take-photo" disabled><i class="fas fa-camera"></i> Сделать фото</button>
-            </div>
-            <div id="mode-indicator">Режим: Фото</div>
-        </section>
-
-        <!-- BMI Tracker -->
-        <section id="bmi-section" class="card">
-            <h2><i class="fas fa-weight"></i> Калькулятор ИМТ</h2>
-            <div class="input-group">
-                <input type="number" id="bmi-weight" placeholder="Вес (кг)">
-                <input type="number" id="bmi-height" placeholder="Рост (см)">
-            </div>
-            <button id="calculate-bmi">Рассчитать</button>
-            <div id="bmi-result">
-                <div class="bmi-visual">
-                    <div class="bmi-scale">
-                        <div class="bmi-indicator"></div>
-                    </div>
-                    <div class="bmi-labels">
-                        <span>Недостаток</span>
-                        <span>Норма</span>
-                        <span>Избыток</span>
-                        <span>Ожирение</span>
-                    </div>
+        <!-- Chat Section -->
+        <section id="chatSection" class="card">
+            <h2><i class="fas fa-comment-medical"></i> Медицинский чат</h2>
+            <div class="chat-container">
+                <div id="chatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="Ваше сообщение...">
+                    <button id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
                 </div>
-                <p id="bmi-value">ИМТ: --</p>
-                <p id="bmi-category">Категория: --</p>
-                <p id="bmi-advice"></p>
-                <button id="bmi-consult-btn" style="display:none;">Проконсультироваться с врачом</button>
-            </div>
-        </section>
-
-        <!-- Doctor Appointment -->
-        <section id="appointment-section" class="card">
-            <h2><i class="fas fa-calendar-check"></i> Запись к врачу</h2>
-            <form id="appointment-form">
-                <select id="health-category" required>
-                    <option value="">Выберите категорию</option>
-                    <option value="cardiology">Кардиология</option>
-                    <option value="ophthalmology">Офтальмология</option>
-                    <option value="traumatology">Травматология</option>
-                    <option value="neurology">Неврология</option>
-                </select>
-                <select id="select-doctor" required disabled>
-                    <option value="">Сначала выберите категорию</option>
-                </select>
-                <textarea id="symptoms" placeholder="Опишите симптомы" required></textarea>
-                <select id="urgency-level" required>
-                    <option value="normal">Обычная</option>
-                    <option value="urgent">Срочная</option>
-                    <option value="emergency">Неотложная</option>
-                </select>
-                <button type="submit">Записаться на прием</button>
-            </form>
-            <div id="appointment-status"></div>
-        </section>
-
-        <!-- AI Chatbot -->
-        <section id="chat-section" class="card">
-            <h2><i class="fas fa-robot"></i> Медицинский помощник</h2>
-            <div class="chat-container" id="chat-messages">
-                <div class="chat-message bot-message">
-                    Здравствуйте! Я QUBI, ваш медицинский помощник. Чем могу помочь?
+                <div class="file-upload">
+                    <input type="file" id="fileUpload">
+                    <button id="sendFileBtn"><i class="fas fa-file-upload"></i> Отправить файл</button>
                 </div>
+                <div id="fileList"></div>
             </div>
-            <div class="chat-input">
-                <input type="text" id="user-input" placeholder="Ваш вопрос...">
-                <button id="send-message"><i class="fas fa-paper-plane"></i></button>
+        </section>
+
+        <!-- Doctor Cabinet Section -->
+        <section id="doctorCabinet" class="card">
+            <h2><i class="fas fa-user-md"></i> Кабинет врача</h2>
+            <div id="doctorAppointments">
+                <h3>Предстоящие приемы</h3>
+                <div id="upcomingAppointments"></div>
+            </div>
+            <div class="doctor-controls">
+                <button id="refreshAppointmentsBtn">Обновить записи</button>
             </div>
         </section>
     </main>
 
-    <footer>
-        <p>© 2023 QUBI Health Technologies. Все права защищены.</p>
-    </footer>
-
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.5.4/dist/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
