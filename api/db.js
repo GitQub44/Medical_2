@@ -2,6 +2,10 @@
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
+// api/db.js
+const { db } = require('@vercel/postgres');
+module.exports = db;
+
 // Verify env var is loaded
 if (!process.env.MONGODB_URI) {
   throw new Error("Missing MONGODB_URI in .env file");
